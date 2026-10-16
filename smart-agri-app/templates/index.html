@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f7ef">
+    <meta name="description" content="Get practical crop recommendations from your soil and climate conditions.">
+    <title>Smart Agriculture Advisor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="/" aria-label="Smart Agriculture Advisor home">
+                <span class="brand-mark" aria-hidden="true">✳</span>
+                <span>Fieldwise</span>
+            </a>
+            <span class="header-note"><span class="status-dot"></span> Grow with confidence</span>
+        </header>
+
+        <main>
+            <section class="intro" aria-labelledby="page-title">
+                <p class="eyebrow">SMART AGRICULTURE ADVISOR</p>
+                <h1 id="page-title">Make your next<br><span>harvest your best.</span></h1>
+                <p class="intro-copy">
+                    Share a few details about your land and local climate to find crops
+                    suited to your growing conditions.
+                </p>
+            </section>
+
+            <div class="dashboard">
+                <section class="card form-card" aria-labelledby="form-title">
+                    <div class="section-heading">
+                        <div class="section-icon" aria-hidden="true">⌁</div>
+                        <div>
+                            <h2 id="form-title">Your field conditions</h2>
+                            <p>Tell us what your growing season looks like.</p>
+                        </div>
+                    </div>
+
+                    <form id="agriForm">
+                        <div class="form-group">
+                            <label for="soil_type">Soil type</label>
+                            <select id="soil_type" name="soil_type" required>
+                                <option value="Loamy">Loamy</option>
+                                <option value="Clay">Clay</option>
+                                <option value="Sandy">Sandy</option>
+                                <option value="Silt">Silt</option>
+                            </select>
+                            <span class="field-hint">Choose the predominant soil in your field.</span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="temperature">Average temperature</label>
+                                <div class="input-with-unit">
+                                    <input
+                                        id="temperature"
+                                        name="temperature"
+                                        type="number"
+                                        min="-20"
+                                        max="60"
+                                        step="0.1"
+                                        value="25"
+                                        required
+                                    >
+                                    <span>°C</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="rainfall">Annual rainfall</label>
+                                <div class="input-with-unit">
+                                    <input
+                                        id="rainfall"
+                                        name="rainfall"
+                                        type="number"
+                                        min="0"
+                                        max="10000"
+                                        step="1"
+                                        value="800"
+                                        required
+                                    >
+                                    <span>mm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="submitButton" class="button-primary" type="submit">
+                            <span>Get crop recommendations</span>
+                            <span aria-hidden="true">↗</span>
+                        </button>
+                        <p class="form-footnote">Recommendations are a helpful starting point; local expertise matters.</p>
+                    </form>
+                </section>
+
+                <section class="card result-card" aria-labelledby="result-title">
+                    <div class="result-topline">
+                        <span class="result-icon" aria-hidden="true">✦</span>
+                        <span>YOUR FIELD PLAN</span>
+                    </div>
+                    <div id="emptyState" class="empty-state">
+                        <div class="field-art" aria-hidden="true">
+                            <span class="sun"></span>
+                            <span class="hill hill-back"></span>
+                            <span class="hill hill-front"></span>
+                            <span class="sprout">♧</span>
+                        </div>
+                        <h2 id="result-title">Your recommendation<br>will grow here.</h2>
+                        <p>Enter your field conditions to see crop ideas and practical advice tailored to your land.</p>
+                    </div>
+                    <div id="resultContent" class="result-content" hidden aria-live="polite">
+                        <p class="result-label">AI-POWERED FIELD PLAN</p>
+                        <h2>Crop ideas</h2>
+                        <ul id="resCrops" class="crop-list"></ul>
+                        <div class="advice-panel">
+                            <h3><span aria-hidden="true">✦</span> Why these crops?</h3>
+                            <p id="resReasoning"></p>
+                        </div>
+                        <section class="advice-section" aria-labelledby="tipsTitle">
+                            <h3 id="tipsTitle">Field advice</h3>
+                            <ul id="tipsList"></ul>
+                        </section>
+                        <section class="advice-section" aria-labelledby="stepsTitle">
+                            <h3 id="stepsTitle">Suggested next steps</h3>
+                            <ul id="stepsList"></ul>
+                        </section>
+                        <p id="cautionText" class="caution-text"></p>
+                        <p id="conditionSummary" class="condition-summary"></p>
+                    </div>
+                    <div id="errorMessage" class="error-message" role="alert" hidden></div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <span>Thoughtful growing starts with understanding your field.</span>
+            <span>FIELDWISE <span aria-hidden="true">·</span> SMART AGRICULTURE</span>
+        </footer>
+    </div>
+
+    <script>
+        const form = document.getElementById("agriForm");
+        const submitButton = document.getElementById("submitButton");
+        const emptyState = document.getElementById("emptyState");
+        const resultContent = document.getElementById("resultContent");
+        const errorMessage = document.getElementById("errorMessage");
+
+        function fillList(listElement, items) {
+            listElement.replaceChildren();
+            for (const item of items) {
+                const listItem = document.createElement("li");
+                listItem.textContent = item;
+                listElement.appendChild(listItem);
+            }
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            errorMessage.hidden = true;
+            submitButton.disabled = true;
+            submitButton.querySelector("span").textContent = "Finding recommendations…";
+
+            const payload = {
+                soil_type: document.getElementById("soil_type").value,
+                temperature: Number(document.getElementById("temperature").value),
+                rainfall: Number(document.getElementById("rainfall").value),
+            };
+
+            try {
+                const response = await fetch("/api/recommend", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const detail = Array.isArray(errorData.detail)
+                        ? "Please check the values and try again."
+                        : errorData.detail;
+                    throw new Error(detail || "We couldn't create a recommendation. Please try again.");
+                }
+
+                const data = await response.json();
+                fillList(document.getElementById("resCrops"), data.recommended_crops);
+                document.getElementById("resReasoning").textContent = data.reasoning;
+                fillList(document.getElementById("tipsList"), data.advisory_tips);
+                fillList(document.getElementById("stepsList"), data.next_steps);
+                document.getElementById("cautionText").textContent = data.caution;
+                document.getElementById("conditionSummary").textContent =
+                    `${data.soil_type} soil · ${data.temperature}°C · ${data.rainfall} mm annual rainfall · ${data.model}`;
+                emptyState.hidden = true;
+                resultContent.hidden = false;
+            } catch (error) {
+                errorMessage.textContent = error.message || "Unable to reach the advisor. Check your connection and try again.";
+                errorMessage.hidden = false;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.querySelector("span").textContent = "Get crop recommendations";
+            }
+        });
+    </script>
+</body>
+</html>

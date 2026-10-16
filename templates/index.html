@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Agriculture Advisor Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌾 Smart Agriculture Advisor</h1>
+            <p>Input your farm conditions to get instant AI-powered crop recommendations.</p>
+        </header>
+
+        <main class="card">
+            <form id="agriForm">
+                <div class="form-group">
+                    <label for="soil_type">Soil Type:</label>
+                    <select id="soil_type" required>
+                        <option value="Loamy">Loamy Soil</option>
+                        <option value="Clay">Clay Soil</option>
+                        <option value="Sandy">Sandy Soil</option>
+                        <option value="Silt">Silt Soil</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="temperature">Average Temperature (°C):</label>
+                    <input type="number" id="temperature" step="0.1" value="25.0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="rainfall">Annual Rainfall (mm):</label>
+                    <input type="number" id="rainfall" step="1" value="120" required>
+                </div>
+
+                <button type="submit" class="btn">Get Recommendation</button>
+            </form>
+
+            <div id="resultBox" class="hidden">
+                <h2>Recommendation Results</h2>
+                <p><strong>Recommended Crop:</strong> <span id="resCrop"></span></p>
+                <p><strong>Farming Tips:</strong> <span id="resTips"></span></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('agriForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const soil_type = document.getElementById('soil_type').value;
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const rainfall = parseFloat(document.getElementById('rainfall').value);
+
+            const response = await fetch('/api/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ soil_type, temperature, rainfall })
+            });
+
+            const data = await response.json();
+            
+            document.getElementById('resCrop').innerText = data.recommended_crop;
+            document.getElementById('resTips').innerText = data.advisory_tips;
+            document.getElementById('resultBox').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
